@@ -191,12 +191,26 @@ client.once('ready', async () => {
   // Registrar client no clientRef para uso pelo dashboard/webhook
   require('./utils/clientRef').setClient(client);
 
-  // ── Iniciar sistema de backup automático no GitHub ────────────────────────────
+  // ── Iniciar sistema de backup automático (sem restaurar, já foi restaurado no main) ────
   try {
     const githubBackup = require('./utils/githubBackup');
-    await githubBackup.iniciar();
+    const token = process.env.GITHUB_TOKEN;
+    const repo = process.env.GITHUB_BACKUP_REPO;
+    
+    if (token && repo) {
+      // Só inicia o timer de backup, não restaura
+      const { configurarGit } = githubBackup;
+      githubBackup.configurarGit?.();
+      
+      // Timer de 30 minutos
+      setInterval(async () => {
+        await githubBackup.fazerBackup();
+      }, 30 * 60 * 1000);
+      
+      console.log('[GitBackup] 🚀 Sistema de backup automático iniciado (a cada 30 min)');
+    }
   } catch (err) {
-    console.error('[GitBackup] ❌ Erro ao iniciar:', err.message);
+    console.error('[GitBackup] ❌ Erro ao iniciar backup:', err.message);
   }
 
   const guild = client.guilds.cache.get(config.guildId)
@@ -819,6 +833,21 @@ client.on('interactionCreate', async (interaction) => {
 // ─── Inicialização ────────────────────────────────────────────
 async function main() {
   console.log('🔧 Inicializando banco de dados...');
+  
+  // ── Restaurar backup do GitHub ANTES de inicializar o banco ────────────────
+  try {
+    const githubBackup = require('./utils/githubBackup');
+    const token = process.env.GITHUB_TOKEN;
+    const repo = process.env.GITHUB_BACKUP_REPO;
+    
+    if (token && repo) {
+      console.log('[GitBackup] 🔄 Tentando restaurar backup antes de iniciar banco...');
+      await githubBackup.restaurarBackup();
+    }
+  } catch (err) {
+    console.error('[GitBackup] ⚠️ Erro ao restaurar backup:', err.message);
+  }
+  
   await initDb();
 
   console.log('📂 Carregando comandos e eventos...');
