@@ -150,16 +150,13 @@ app.post('/webhook/pix', async (req, res) => {
 });
 
 // ─── Health check para Railway ────────────────────────────────────────────────
-app.get('/', (req, res) => {
-  res.json({
-    status: 'online',
-    bot: 'Máximo Store',
-    version: '2.0.0',
-    timestamp: new Date().toISOString(),
-  });
-});
+app.get('/health', (req, res) => res.json({ ok: true, status: 'online', timestamp: new Date().toISOString() }));
 
-app.get('/health', (req, res) => res.json({ ok: true }));
+// ─── Landing Page Moderna ─────────────────────────────────────────────────────
+app.get('/', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(require('./landingPage').html);
+});
 
 // ─── Download de arquivo de entrega ──────────────────────────────────────────
 app.get('/download/:token', (req, res) => {
@@ -348,6 +345,134 @@ a{color:#a78bfa;text-decoration:none}
     <a href="/termos">Termos de Serviço</a>
   </div>
 </div>
+</body>
+</html>`);
+});
+
+// ─── Página 404 personalizada ─────────────────────────────────────────────────
+app.use((req, res) => {
+  res.status(404).setHeader('Content-Type', 'text/html; charset=utf-8').send(`<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 - Página não encontrada | MrStore</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: #0a0a0f;
+      color: #e4e4e7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    body::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle at 50% 50%, rgba(147, 51, 234, 0.15) 0%, transparent 50%);
+      animation: rotate 30s linear infinite;
+    }
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+    }
+    .error-code {
+      font-size: 120px;
+      font-weight: 900;
+      background: linear-gradient(135deg, #e8b840, #f5d060, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 24px;
+      letter-spacing: -4px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
+    }
+    p {
+      font-size: 18px;
+      color: #a1a1aa;
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+    .buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      padding: 14px 32px;
+      border-radius: 12px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+      font-size: 16px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #e8b840, #f5d060);
+      color: #0a0a0f;
+      box-shadow: 0 8px 30px rgba(232, 184, 64, 0.4);
+    }
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(232, 184, 64, 0.6);
+    }
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: #e4e4e7;
+      border: 1px solid #27272a;
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #e8b840;
+      transform: translateY(-2px);
+    }
+    .emoji {
+      font-size: 64px;
+      margin-bottom: 24px;
+      display: block;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-20px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <span class="emoji">🔍</span>
+    <div class="error-code">404</div>
+    <h1>Página não encontrada</h1>
+    <p>
+      Ops! A página que você está procurando não existe ou foi movida.
+      Que tal voltar para a página inicial ou acessar o dashboard?
+    </p>
+    <div class="buttons">
+      <a href="/" class="btn btn-primary">🏠 Página Inicial</a>
+      <a href="/painel" class="btn btn-secondary">🎛️ Dashboard</a>
+    </div>
+  </div>
 </body>
 </html>`);
 });
