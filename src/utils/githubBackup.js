@@ -173,19 +173,15 @@ async function iniciar() {
 
   console.log('[GitBackup] 🚀 Sistema de backup automático iniciado (a cada 30 min)');
 
-  // Backup ao desligar o bot
-  process.on('SIGINT', async () => {
-    console.log('[GitBackup] 🛑 Fazendo backup final antes de desligar...');
+  // Cleanup ao desligar (sem bloquear o shutdown)
+  process.on('SIGINT', () => {
     clearInterval(backupTimer);
-    await fazerBackup();
-    process.exit(0);
+    console.log('[GitBackup] ⚠️ Bot encerrando (backup será feito no próximo intervalo)');
   });
 
-  process.on('SIGTERM', async () => {
-    console.log('[GitBackup] 🛑 Fazendo backup final antes de desligar...');
+  process.on('SIGTERM', () => {
     clearInterval(backupTimer);
-    await fazerBackup();
-    process.exit(0);
+    console.log('[GitBackup] ⚠️ Bot encerrando (backup será feito no próximo intervalo)');
   });
 }
 
