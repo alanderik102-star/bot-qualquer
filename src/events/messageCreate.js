@@ -374,35 +374,8 @@ async function carregarPaineisCanal(message) {
 
   const aviso = await message.reply(`🔄 **Carregando painéis de** <#${message.channel.id}>...`).catch(() => null);
 
-  // Mapeamento canal → categoria
-  const CANAL_CATEGORIA = {
-    '1544831949531516938': 'Loja Free Fire',
-    '1554274779341783060': 'Loja Free Fire',
-    '1549523707293204490': 'Spoofer',
-    '1549538378561757294': 'Spoofer',
-    '1553981298064756857': 'Spoofer',
-    '1555781125270667366': 'Spoofer',
-    '1549538342066983003': 'Mod Menu FiveM',
-    '1549538423507910687': 'Mod Menu FiveM',
-    '1553979985700847626': 'Mod Menu FiveM',
-    '1555779447968370699': 'Mod Menu FiveM',
-    '1552328037335433287': 'External',
-    '1551791700949860412': 'External',
-    '1551791388180611072': 'Combos',
-    '1551791731920478229': 'Combos',
-    '1553982816080109598': 'Combos',
-    '1544956134463504435': 'Contas FiveM',
-    '1544933939053989958': 'Contas FiveM',
-    '1544831892354900068': 'Contas FiveM',
-    '1544941555473719316': 'Contas FiveM',
-    '1551027859101974669': 'Contas FiveM',
-    '1541882411426517052': 'Contas FiveM',
-    '1548357068396695662': 'Loja Fluxo',
-    '1548356989019754606': 'Loja Fluxo',
-    '1551041996880220160': 'Loja Extra',
-    '1552359144227340298': 'Loja Extra',
-    '1545668271980941322': 'Loja Extra',
-  };
+  // Pegar categoria do canal parent do Discord (automaticamente)
+  const categoriaCanal = message.channel.parent?.name || 'Geral';
 
   let paineisCriados = 0;
   let produtosCriados = 0;
@@ -468,7 +441,7 @@ async function carregarPaineisCanal(message) {
           continue;
         }
 
-        const categoria = CANAL_CATEGORIA[canal.id] || canal.parent?.name || 'Geral';
+        const categoria = categoriaCanal; // Usar categoria do canal parent do Discord
         const produtoId = uuidv4();
         
         db.prepare(`INSERT INTO produtos (id, nome, descricao, preco, imagem_url, tipo, ativo, criado_por, categoria, criado_em) VALUES (?,?,?,?,?,?,1,?,?,strftime('%s','now'))`).run(produtoId, titulo, descricao, 0, imagemUrl, 'digital', message.author.id, categoria);

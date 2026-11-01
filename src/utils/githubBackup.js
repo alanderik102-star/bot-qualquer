@@ -71,7 +71,7 @@ async function restaurarBackup() {
     const buffer = Buffer.from(await response.arrayBuffer());
     
     // Validar se não está corrompido (tamanho mínimo de um SQLite válido)
-    if (buffer.length < 1024) {
+    if (buffer.length < 4096) {
       console.log('[GitBackup] ⚠️ Backup muito pequeno, pode estar corrompido. Ignorando.');
       return false;
     }
@@ -83,10 +83,30 @@ async function restaurarBackup() {
       return false;
     }
     
-    fs.writeFileSync(DB_PATH, buffer);
-
-    console.log('[GitBackup] ✅ Backup restaurado do GitHub!');
-    return true;
+    // VALIDAÇÃO CRÍTICA: Tentar abrir o banco antes de usar
+    const tempPath = DB_PATH + '.temp';
+    fs.writeFileSync(tempPath, buffer);
+    
+    try {
+      const Database = require('better-sqlite3');
+      const testDb = new Database(tempPath, { readonly: true });
+      // Tentar fazer uma query simples para garantir que o banco funciona
+      testDb.pragma('integrity_check');
+      testDb.close();
+      
+      // Banco válido! Mover para o local definitivo
+      fs.renameSync(tempPath, DB_PATH);
+      console.log('[GitBackup] ✅ Backup restaurado e validado com sucesso!');
+      return true;
+    } catch (err) {
+      console.error('[GitBackup] ❌ BACKUP CORROMPIDO detectado:', err.message);
+      console.log('[GitBackup] 🔄 Criando novo banco limpo ao invés de usar backup corrompido...');
+      
+      // Deletar arquivo temporário corrompido
+      try { fs.unlinkSync(tempPath); } catch {}
+      
+      return false;
+    }
   } catch (err) {
     console.error('[GitBackup] ❌ Erro ao restaurar backup:', err.message);
     return false;
