@@ -92,6 +92,249 @@ async function exportarBanco(message) {
   }
 }
 
+// ── Carregar painéis de produtos existentes nos canais ────────────────────────
+async function carregarPaineisExistentes(message) {
+  const OWNER_ID    = process.env.OWNER_DISCORD_ID || '1382576164752724069';
+  const OWNER_ROLE  = process.env.CARGO_OWNER       || '1522459532469469225';
+  const temPermissao = message.author.id === OWNER_ID
+    || message.member?.roles?.cache?.has(OWNER_ROLE);
+
+  if (!temPermissao) {
+    return message.reply('❌ Apenas o dono do bot pode carregar painéis.').catch(() => {});
+  }
+
+  const args = message.content.trim().split(/\s+/);
+  const canalMencao = message.mentions.channels.first();
+  const limite = parseInt(args[args.indexOf('limite') + 1]) || 50;
+
+  const aviso = await message.reply('🔄 **Carregando painéis dos canais...**').catch(() => null);
+
+  // Mapeamento canal → categoria
+  const CANAL_CATEGORIA = {
+    '1544831949531516938': 'Loja Free Fire',
+    '1554274779341783060': 'Loja Free Fire',
+    '1549523707293204490': 'Spoofer',
+    '1549538378561757294': 'Spoofer',
+    '1553981298064756857': 'Spoofer',
+    '1555781125270667366': 'Spoofer',
+    '1549538342066983003': 'Mod Menu FiveM',
+    '1549538423507910687': 'Mod Menu FiveM',
+    '1553979985700847626': 'Mod Menu FiveM',
+    '1555779447968370699': 'Mod Menu FiveM',
+    '1552328037335433287': 'External',
+    '1551791700949860412': 'External',
+    '1551791388180611072': 'Combos',
+    '1551791731920478229': 'Combos',
+    '1553982816080109598': 'Combos',
+    '1544956134463504435': 'Contas FiveM',
+    '1544933939053989958': 'Contas FiveM',
+    '1544831892354900068': 'Contas FiveM',
+    '1544941555473719316': 'Contas FiveM',
+    '1551027859101974669': 'Contas FiveM',
+    '1541882411426517052': 'Contas FiveM',
+    '1548357068396695662': 'Loja Fluxo',
+    '1548356989019754606': 'Loja Fluxo',
+    '1551041996880220160': 'Loja Extra',
+    '1552359144227340298': 'Loja Extra',
+    '1545668271980941322': 'Loja Extra',
+  };
+
+  let canaisParaCarregar = [];
+  
+  if (canalMencao) {
+    canaisParaCarregar.push(canalMencao);
+  } else {
+    // Carregar todos os canais mapeados
+    for (const canalId of Object.keys(CANAL_CATEGORIA)) {
+      const canal = await message.guild.channels.fetch(canalId).catch(() => null);
+      if (canal) canaisParaCarregar.push(canal);
+    }
+  }
+
+  if (canaisParaCarregar.length === 0) {
+    return message.reply('❌ Nenhum canal encontrado para carregar.').catch(() => {});
+  }
+
+  let paineisCriados = 0;
+  let produtosCriados = 0;
+  let variantesCriadas = 0;
+  let erros = 0;
+  const log = [];
+
+  const { v4: uuidv4 } = require('uuid');
+
+  for (const canal of canaisParaCarregar) {
+    try {
+      log.push(`\n🔍 **Buscando em** <#${canal.id}>...`);
+      
+      // Buscar mensagens recentes do bot
+      const mensagens = await canal.messages.fetch({ limit: limite });
+      const mensagensBot = mensagens.filter(m => 
+        m.author.id === message.client.user.id && 
+        m.embeds.length > 0 &&
+        m.components.length > 0
+      );
+
+      log.push(`   └─ ${mensagensBot.size} mensagens do bot encontradas`);
+
+      for (const [msgId, msg] of mensagensBot) {
+        try {
+          const embed = msg.embeds[0];
+          const components = msg.components;
+
+          // Verificar se tem select menu (painel de produto)
+          const selectMenu = components[0]?.components?.find(c => c.type === 3); // type 3 = StringSelect
+          if (!selectMenu || !selectMenu.customId?.startsWith('painel_selecionar_')) {
+            continue;
+          }
+
+          // Extrair dados do embed
+          const titulo = embed.title
+            ?.replace('🛍️', '')
+            ?.replace('⚡ FLASH SALE —', '')
+            ?.replace('🔴', '')
+            ?.trim() || 'Produto Importado';
+          
+          const descricao = embed.description
+            ?.split('\n')
+            ?.filter(l => !l.includes('OFERTA') && !l.includes('Termina'))
+            ?.map(l => l.replace('>', '').trim())
+            ?.filter(Boolean)
+            ?.join('\n') || '';
+
+          const imagemUrl = embed.image?.url || embed.thumbnail?.url || null;
+          const cor = embed.color?.toString(16).padStart(6, '0') || 'FF6B6B';
+
+          // Verificar se já existe painel para esta mensagem
+          const painelExistente = db.prepare('SELECT id FROM paineis_canal WHERE mensagem_id=?').get(msgId);
+          if (painelExistente) {
+            log.push(`   ⏭️ Painel já existe: ${titulo.slice(0, 30)}...`);
+            continue;
+          }
+
+          // Criar produto
+          const categoria = CANAL_CATEGORIA[canal.id] || canal.parent?.name || 'Geral';
+          const produtoId = uuidv4();
+          
+          db.prepare(`
+            INSERT INTO produtos (id, nome, descricao, preco, imagem_url, tipo, ativo, criado_por, categoria, criado_em)
+            VALUES (?,?,?,?,?,?,1,?,?,strftime('%s','now'))
+          `).run(produtoId, titulo, descricao, 0, imagemUrl, 'digital', message.author.id, categoria);
+          produtosCriados++;
+
+          // Extrair variantes do select menu
+          const options = selectMenu.options || [];
+          let variantesCount = 0;
+
+          for (let i = 0; i < options.length; i++) {
+            const opt = options[i];
+            
+            // Extrair nome e preço do label
+            // Formato: "✅ Nome do Plano — R$ 29.90"
+            const label = opt.label || '';
+            const match = label.match(/[✅❌⚠️]\s*(.+?)\s*—\s*R\$\s*([\d.,]+)/);
+            
+            if (!match) continue;
+
+            const nomeVariante = match[1].trim();
+            const precoStr = match[2].replace(',', '.');
+            const preco = parseFloat(precoStr);
+
+            if (isNaN(preco)) continue;
+
+            // Extrair estoque da descrição
+            const desc = opt.description || '';
+            const estoqueMatch = desc.match(/(\d+)\s+disponíveis?|Últimas\s+(\d+)/i);
+            const estoque = estoqueMatch ? parseInt(estoqueMatch[1] || estoqueMatch[2]) : -1;
+
+            // Verificar se tem ID da variante no value
+            const varianteId = opt.value?.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i) 
+              ? opt.value 
+              : uuidv4();
+
+            // Tentar recuperar estoque real se a variante já existia
+            const estoqueReal = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || estoque;
+
+            db.prepare(`
+              INSERT OR IGNORE INTO variantes_produto (id, produto_id, nome, descricao, preco, estoque, ordem, ativo)
+              VALUES (?,?,?,?,?,?,?,1)
+            `).run(varianteId, produtoId, nomeVariante, desc, preco, estoqueReal, i + 1);
+            
+            variantesCriadas++;
+            variantesCount++;
+          }
+
+          // Criar registro do painel
+          const painelId = selectMenu.customId.replace('painel_selecionar_', '');
+          
+          db.prepare(`
+            INSERT OR REPLACE INTO paineis_canal (id, canal_id, produto_id, titulo, descricao, cor, imagem_url, mensagem_id, criado_por, ativo)
+            VALUES (?,?,?,?,?,?,?,?,?,1)
+          `).run(painelId, canal.id, produtoId, titulo, descricao, cor, imagemUrl, msgId, message.author.id);
+          
+          paineisCriados++;
+          log.push(`   ✅ **${titulo.slice(0, 40)}** — ${variantesCount} plano(s)`);
+
+        } catch (err) {
+          erros++;
+          log.push(`   ❌ Erro em mensagem ${msgId}: ${err.message}`);
+        }
+      }
+
+    } catch (err) {
+      erros++;
+      log.push(`❌ Erro no canal <#${canal.id}>: ${err.message}`);
+    }
+  }
+
+  // Resumo final
+  const resumo = [
+    `\n━━━━━━━━━━━━━━━━━━━━━━━━━━`,
+    `## 📊 Resumo da Importação`,
+    ``,
+    `✅ **${paineisCriados}** painéis carregados`,
+    `📦 **${produtosCriados}** produtos criados`,
+    `🏷️ **${variantesCriadas}** variantes criadas`,
+    erros > 0 ? `⚠️ **${erros}** erros encontrados` : '',
+    ``,
+    `🔄 Os painéis agora estão conectados ao sistema!`,
+    ``,
+  ].filter(Boolean).join('\n');
+
+  log.push(resumo);
+
+  // Dividir em múltiplas mensagens se necessário
+  const logCompleto = log.join('\n');
+  const MAX_LEN = 1900;
+
+  if (logCompleto.length <= MAX_LEN) {
+    if (aviso) await aviso.edit(logCompleto).catch(() => {});
+    else await message.channel.send(logCompleto).catch(() => {});
+  } else {
+    const chunks = [];
+    let currentChunk = '';
+    
+    for (const line of log) {
+      if ((currentChunk + line + '\n').length > MAX_LEN) {
+        chunks.push(currentChunk);
+        currentChunk = line + '\n';
+      } else {
+        currentChunk += line + '\n';
+      }
+    }
+    if (currentChunk) chunks.push(currentChunk);
+
+    // Enviar primeira parte
+    if (aviso) await aviso.edit(chunks[0]).catch(() => {});
+    else await message.channel.send(chunks[0]).catch(() => {});
+
+    // Enviar resto
+    for (let i = 1; i < chunks.length; i++) {
+      await message.channel.send(chunks[i]).catch(() => {});
+    }
+  }
+}
+
 module.exports = {
   name: 'messageCreate',
   async execute(message) {
@@ -151,6 +394,12 @@ module.exports = {
     // ── !exportar — exporta banco como arquivo ────────────────────────────
     if (comando === '!exportar') {
       await exportarBanco(message);
+      return;
+    }
+
+    // ── !carregar — recarrega painéis de produtos dos canais ──────────────
+    if (message.content.toLowerCase().startsWith('!carregar')) {
+      await carregarPaineisExistentes(message);
       return;
     }
 
