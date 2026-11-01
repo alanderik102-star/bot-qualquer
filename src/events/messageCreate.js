@@ -105,7 +105,7 @@ async function carregarPaineisExistentes(message) {
 
   const args = message.content.trim().split(/\s+/);
   const canalMencao = message.mentions.channels.first();
-  const limite = parseInt(args[args.indexOf('limite') + 1]) || 50;
+  const limite = parseInt(args[args.indexOf('limite') + 1]) || 1000;
 
   const aviso = await message.reply('🔄 **Carregando painéis dos canais...**').catch(() => null);
 
@@ -245,7 +245,7 @@ async function carregarPaineisExistentes(message) {
             // Extrair estoque da descrição
             const desc = opt.description || '';
             const estoqueMatch = desc.match(/(\d+)\s+disponíveis?|Últimas\s+(\d+)/i);
-            const estoque = estoqueMatch ? parseInt(estoqueMatch[1] || estoqueMatch[2]) : -1;
+            const estoque = estoqueMatch ? parseInt(estoqueMatch[1] || estoqueMatch[2]) : 27;
 
             // Verificar se tem ID da variante no value
             const varianteId = opt.value?.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i) 
