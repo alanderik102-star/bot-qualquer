@@ -358,6 +358,189 @@ async function carregarPaineisExistentes(message) {
   }
 }
 
+// ── Carregar painéis apenas do canal atual ────────────────────────────────────
+async function carregarPaineisCanal(message) {
+  const OWNER_ID    = process.env.OWNER_DISCORD_ID || '1382576164752724069';
+  const OWNER_ROLE  = process.env.CARGO_OWNER       || '1522459532469469225';
+  const temPermissao = message.author.id === OWNER_ID
+    || message.member?.roles?.cache?.has(OWNER_ROLE);
+
+  if (!temPermissao) {
+    return message.reply('❌ Apenas o dono do bot pode carregar painéis.').catch(() => {});
+  }
+
+  const args = message.content.trim().split(/\s+/);
+  const limite = parseInt(args[1]) || 1000;
+
+  const aviso = await message.reply(`🔄 **Carregando painéis de** <#${message.channel.id}>...`).catch(() => null);
+
+  // Mapeamento canal → categoria
+  const CANAL_CATEGORIA = {
+    '1544831949531516938': 'Loja Free Fire',
+    '1554274779341783060': 'Loja Free Fire',
+    '1549523707293204490': 'Spoofer',
+    '1549538378561757294': 'Spoofer',
+    '1553981298064756857': 'Spoofer',
+    '1555781125270667366': 'Spoofer',
+    '1549538342066983003': 'Mod Menu FiveM',
+    '1549538423507910687': 'Mod Menu FiveM',
+    '1553979985700847626': 'Mod Menu FiveM',
+    '1555779447968370699': 'Mod Menu FiveM',
+    '1552328037335433287': 'External',
+    '1551791700949860412': 'External',
+    '1551791388180611072': 'Combos',
+    '1551791731920478229': 'Combos',
+    '1553982816080109598': 'Combos',
+    '1544956134463504435': 'Contas FiveM',
+    '1544933939053989958': 'Contas FiveM',
+    '1544831892354900068': 'Contas FiveM',
+    '1544941555473719316': 'Contas FiveM',
+    '1551027859101974669': 'Contas FiveM',
+    '1541882411426517052': 'Contas FiveM',
+    '1548357068396695662': 'Loja Fluxo',
+    '1548356989019754606': 'Loja Fluxo',
+    '1551041996880220160': 'Loja Extra',
+    '1552359144227340298': 'Loja Extra',
+    '1545668271980941322': 'Loja Extra',
+  };
+
+  let paineisCriados = 0;
+  let produtosCriados = 0;
+  let variantesCriadas = 0;
+  let erros = 0;
+  const log = [];
+
+  const { v4: uuidv4 } = require('uuid');
+  const canal = message.channel;
+
+  try {
+    log.push(`🔍 **Buscando em** <#${canal.id}>...`);
+    
+    // Buscar mensagens em lotes de 100
+    const todasMensagens = new Map();
+    let ultimaMsgId = null;
+    let totalBuscado = 0;
+
+    while (totalBuscado < limite) {
+      const buscar = Math.min(100, limite - totalBuscado);
+      const opcoes = { limit: buscar };
+      if (ultimaMsgId) opcoes.before = ultimaMsgId;
+
+      const lote = await canal.messages.fetch(opcoes).catch(err => {
+        log.push(`   ❌ Erro ao buscar mensagens: ${err.message}`);
+        return null;
+      });
+
+      if (!lote || lote.size === 0) break;
+
+      lote.forEach((msg, id) => todasMensagens.set(id, msg));
+      ultimaMsgId = lote.last()?.id;
+      totalBuscado += lote.size;
+
+      if (lote.size < buscar) break;
+    }
+
+    const mensagensBot = Array.from(todasMensagens.values()).filter(m => 
+      m.author.id === message.client.user.id && 
+      m.embeds.length > 0 &&
+      m.components.length > 0
+    );
+
+    log.push(`   └─ ${mensagensBot.length} mensagens do bot encontradas (de ${todasMensagens.size} buscadas)`);
+
+    for (const msg of mensagensBot) {
+      const msgId = msg.id;
+      try {
+        const embed = msg.embeds[0];
+        const components = msg.components;
+
+        const selectMenu = components[0]?.components?.find(c => c.type === 3);
+        if (!selectMenu || !selectMenu.customId?.startsWith('painel_selecionar_')) continue;
+
+        const titulo = embed.title?.replace('🛍️', '').replace('⚡ FLASH SALE —', '').replace('🔴', '').trim() || 'Produto Importado';
+        const descricao = embed.description?.split('\n')?.filter(l => !l.includes('OFERTA') && !l.includes('Termina'))?.map(l => l.replace('>', '').trim())?.filter(Boolean)?.join('\n') || '';
+        const imagemUrl = embed.image?.url || embed.thumbnail?.url || null;
+        const cor = embed.color?.toString(16).padStart(6, '0') || 'FF6B6B';
+
+        const painelExistente = db.prepare('SELECT id FROM paineis_canal WHERE mensagem_id=?').get(msgId);
+        if (painelExistente) {
+          log.push(`   ⏭️ Painel já existe: ${titulo.slice(0, 30)}...`);
+          continue;
+        }
+
+        const categoria = CANAL_CATEGORIA[canal.id] || canal.parent?.name || 'Geral';
+        const produtoId = uuidv4();
+        
+        db.prepare(`INSERT INTO produtos (id, nome, descricao, preco, imagem_url, tipo, ativo, criado_por, categoria, criado_em) VALUES (?,?,?,?,?,?,1,?,?,strftime('%s','now'))`).run(produtoId, titulo, descricao, 0, imagemUrl, 'digital', message.author.id, categoria);
+        produtosCriados++;
+
+        const options = selectMenu.options || [];
+        let variantesCount = 0;
+
+        for (let i = 0; i < options.length; i++) {
+          const opt = options[i];
+          const label = opt.label || '';
+          const match = label.match(/[✅❌⚠️]\s*(.+?)\s*—\s*R\$\s*([\d.,]+)/);
+          if (!match) continue;
+
+          const nomeVariante = match[1].trim();
+          const preco = parseFloat(match[2].replace(',', '.'));
+          if (isNaN(preco)) continue;
+
+          const desc = opt.description || '';
+          const estoqueMatch = desc.match(/(\d+)\s+disponíveis?|Últimas\s+(\d+)/i);
+          const estoque = estoqueMatch ? parseInt(estoqueMatch[1] || estoqueMatch[2]) : 27;
+
+          const varianteId = opt.value?.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i) ? opt.value : uuidv4();
+          const estoqueReal = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || estoque;
+
+          db.prepare(`INSERT OR IGNORE INTO variantes_produto (id, produto_id, nome, descricao, preco, estoque, ordem, ativo) VALUES (?,?,?,?,?,?,?,1)`).run(varianteId, produtoId, nomeVariante, desc, preco, estoqueReal, i + 1);
+          variantesCriadas++;
+          variantesCount++;
+        }
+
+        const painelId = selectMenu.customId.replace('painel_selecionar_', '');
+        db.prepare(`INSERT OR REPLACE INTO paineis_canal (id, canal_id, produto_id, titulo, descricao, cor, imagem_url, mensagem_id, criado_por, ativo) VALUES (?,?,?,?,?,?,?,?,?,1)`).run(painelId, canal.id, produtoId, titulo, descricao, cor, imagemUrl, msgId, message.author.id);
+        
+        paineisCriados++;
+        log.push(`   ✅ **${titulo.slice(0, 40)}** — ${variantesCount} plano(s)`);
+      } catch (err) {
+        erros++;
+        log.push(`   ❌ Erro: ${err.message}`);
+      }
+    }
+  } catch (err) {
+    erros++;
+    log.push(`❌ Erro no canal: ${err.message}`);
+  }
+
+  const resumo = [`\n━━━━━━━━━━━━━━━━━━━━━━━━━━`,`## 📊 Resumo — <#${canal.id}>`,``,`✅ **${paineisCriados}** painéis`,`📦 **${produtosCriados}** produtos`,`🏷️ **${variantesCriadas}** variantes`,erros > 0 ? `⚠️ **${erros}** erros` : '',``,`🔄 Painéis conectados!`,``].filter(Boolean).join('\n');
+  log.push(resumo);
+
+  const logCompleto = log.join('\n');
+  if (logCompleto.length <= 1900) {
+    if (aviso) await aviso.edit(logCompleto).catch(() => {});
+    else await message.channel.send(logCompleto).catch(() => {});
+  } else {
+    const chunks = [];
+    let currentChunk = '';
+    for (const line of log) {
+      if ((currentChunk + line + '\n').length > 1900) {
+        chunks.push(currentChunk);
+        currentChunk = line + '\n';
+      } else {
+        currentChunk += line + '\n';
+      }
+    }
+    if (currentChunk) chunks.push(currentChunk);
+    if (aviso) await aviso.edit(chunks[0]).catch(() => {});
+    else await message.channel.send(chunks[0]).catch(() => {});
+    for (let i = 1; i < chunks.length; i++) {
+      await message.channel.send(chunks[i]).catch(() => {});
+    }
+  }
+}
+
 module.exports = {
   name: 'messageCreate',
   async execute(message) {
@@ -423,6 +606,12 @@ module.exports = {
     // ── !carregar — recarrega painéis de produtos dos canais ──────────────
     if (message.content.toLowerCase().startsWith('!carregar')) {
       await carregarPaineisExistentes(message);
+      return;
+    }
+
+    // ── !carregarc — recarrega painéis apenas do canal atual ───────────────
+    if (message.content.toLowerCase().startsWith('!carregarc')) {
+      await carregarPaineisCanal(message);
       return;
     }
 
