@@ -183,20 +183,6 @@ tr:last-child td{border-bottom:none}tr:hover td{background:rgba(0,255,136,0.05)}
 })();
 </script>`;
 
-      ctx.fillStyle='rgba('+p.color+','+(a*.1)+')'; ctx.fill();
-    });
-    sakura.forEach(s=>{
-      s.x+=s.vx; s.y+=s.vy; s.rot+=s.rs; s.vx+=Math.sin(s.y*.01)*.01;
-      if(s.y>H+20){ s.y=-20; s.x=Math.random()*W; }
-      drawPetal(s.x,s.y,s.size,s.rot,s.alpha,s.color);
-    });
-    requestAnimationFrame(draw);
-  }
-  window.addEventListener('resize',()=>{ resize(); initParticles(); initOrbs(); });
-  resize(); initParticles(); initSakura(); initOrbs(); draw();
-})();
-</script>`;
-
 function layout(user, title, body, activePage = '') {
   const { podeVer } = require('./db');
   const cargo = user?.cargo || 'cliente';
