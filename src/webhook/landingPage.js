@@ -522,12 +522,12 @@ module.exports.html = `<!DOCTYPE html>
     <nav class="container">
       <div class="logo">⚡ MrStore</div>
       <ul class="nav-links">
-        <li><a href="#recursos">Recursos</a></li>
+        <li><a href="#recursos">Produtos</a></li>
         <li><a href="#sobre">Sobre</a></li>
         <li><a href="/termos">Termos</a></li>
         <li><a href="/privacidade">Privacidade</a></li>
       </ul>
-      <a href="/painel" class="cta-button">🎛️ Painel Admin</a>
+      <a href="https://discord.gg/mrstore" class="cta-button">🎮 DISCORD</a>
     </nav>
   </header>
 

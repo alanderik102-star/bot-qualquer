@@ -609,6 +609,36 @@ module.exports = {
       return;
     }
 
+    // ── !backup — força backup manual do banco no GitHub ───────────────────
+    if (message.content.toLowerCase() === '!backup') {
+      const OWNER_ID = process.env.OWNER_DISCORD_ID || '1382576164752724069';
+      const OWNER_ROLE = process.env.CARGO_OWNER || '1522459532469469225';
+      const temPermissao = message.author.id === OWNER_ID || message.member?.roles?.cache?.has(OWNER_ROLE);
+      
+      if (!temPermissao) {
+        return message.reply('❌ Apenas o dono do bot pode fazer backup manual.').catch(() => {});
+      }
+
+      const aviso = await message.reply('💾 Fazendo backup do banco no GitHub...').catch(() => null);
+      
+      try {
+        const { backupManual } = require('../utils/githubBackup');
+        const sucesso = await backupManual();
+        
+        if (sucesso) {
+          if (aviso) await aviso.edit('✅ Backup enviado para o GitHub com sucesso!');
+          else await message.reply('✅ Backup enviado para o GitHub com sucesso!');
+        } else {
+          if (aviso) await aviso.edit('❌ Erro ao fazer backup. Verifique se GITHUB_TOKEN e GITHUB_BACKUP_REPO estão configurados.');
+          else await message.reply('❌ Erro ao fazer backup.');
+        }
+      } catch (err) {
+        if (aviso) await aviso.edit(`❌ Erro: ${err.message}`);
+        else await message.reply(`❌ Erro: ${err.message}`);
+      }
+      return;
+    }
+
     // ── !carregar — recarrega painéis de produtos dos canais ──────────────
     if (message.content.toLowerCase().startsWith('!carregar')) {
       await carregarPaineisExistentes(message);

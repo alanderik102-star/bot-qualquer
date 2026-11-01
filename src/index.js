@@ -191,6 +191,14 @@ client.once('ready', async () => {
   // Registrar client no clientRef para uso pelo dashboard/webhook
   require('./utils/clientRef').setClient(client);
 
+  // ── Iniciar sistema de backup automático no GitHub ────────────────────────────
+  try {
+    const githubBackup = require('./utils/githubBackup');
+    await githubBackup.iniciar();
+  } catch (err) {
+    console.error('[GitBackup] ❌ Erro ao iniciar:', err.message);
+  }
+
   const guild = client.guilds.cache.get(config.guildId)
     ?? await client.guilds.fetch(config.guildId).catch(() => null);
 

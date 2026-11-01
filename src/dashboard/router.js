@@ -2555,11 +2555,12 @@ router.get('/carrinhos', auth.middlewareAba('carrinhos'), (req, res) => {
             <tr><th>Nome do Plano</th><th>ID da Variante</th><th>Preço</th><th>Estoque</th><th>Status</th></tr>
             ${variantes.map(v => {
               const est = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(v.id)?.c || 0;
+              const estoqueDisplay = v.infinito ? '27 disponíveis ♾️' : (v.estoque === -1 ? '∞ Ilimitado' : `${est} disponíveis`);
               return `<tr>
                 <td style="font-weight:600;color:#fff">${v.nome}</td>
                 <td><code style="font-size:11px;color:#a78bfa;user-select:all;cursor:pointer" title="Clique para copiar" onclick="navigator.clipboard.writeText('${v.id}');this.textContent='✅ Copiado!';setTimeout(()=>this.textContent='${v.id}',1500)">${v.id}</code></td>
                 <td style="color:#00e87a;font-weight:600">${fmtMoeda(v.preco)}</td>
-                <td>${v.estoque === -1 ? '∞ Ilimitado' : `${est} disponíveis`}</td>
+                <td>${estoqueDisplay}</td>
                 <td>${badge(v.ativo ? 'ativo' : 'inativo')}</td>
               </tr>`;
             }).join('')}
