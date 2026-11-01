@@ -624,6 +624,8 @@ const Produtos = {
   temEstoque: (id, qtd = 1) => {
     const p = Produtos.get(id);
     if (!p || !p.ativo) return false;
+    // Se estoque infinito está ativo, sempre tem estoque
+    if (p.estoque_infinito === 1) return true;
     if (p.estoque === -1) return true;
     if (p.tipo === 'digital') {
       const disponivel = db.prepare('SELECT COUNT(*) as c FROM estoque_digital WHERE produto_id = ? AND usado = 0').get(id);

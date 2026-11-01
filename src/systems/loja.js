@@ -495,29 +495,36 @@ async function entregarProduto(pedido, client) {
     const qtd = Math.max(1, parseInt(pedido.quantidade) || 1); // Declarar no início
 
     if (produto.tipo === 'digital') {
-      // Variante primeiro
-      let notaFiscal = null;
-      try { notaFiscal = pedido.nota_fiscal ? JSON.parse(pedido.nota_fiscal) : null; } catch {}
-      const varianteId = notaFiscal?.varianteId;
+      // PRIMEIRO: Verificar se o produto tem estoque infinito ativo
+      if (produto.estoque_infinito === 1) {
+        // Estoque infinito — entrega manual via ticket
+        conteudo = '⚠️ ABRIR TICKET PRA RESGATAR';
+        estoqueInfinito = true;
+      } else {
+        // Variante primeiro
+        let notaFiscal = null;
+        try { notaFiscal = pedido.nota_fiscal ? JSON.parse(pedido.nota_fiscal) : null; } catch {}
+        const varianteId = notaFiscal?.varianteId;
 
-      if (varianteId) {
-        // Verificar se a variante tem flag infinito=1
-        const variante = db.prepare('SELECT infinito FROM variantes_produto WHERE id=?').get(varianteId);
-        if (variante?.infinito) {
-          // Estoque infinito — entrega manual via ticket
-          conteudo = '⚠️ ABRIR TICKET PRA RESGATAR';
-          estoqueInfinito = true; // Bloquear fallback
-        } else {
-          // Estoque normal — pegar do banco
-          const { pegarItemVariante } = require('./painelProduto');
-          const itens = [];
-          for (let i = 0; i < qtd; i++) {
-            const item = pegarItemVariante(varianteId, pedido.usuario_id, pedido.id);
-            if (item) itens.push(item);
-            else break;
+        if (varianteId) {
+          // Verificar se a variante tem flag infinito=1
+          const variante = db.prepare('SELECT infinito FROM variantes_produto WHERE id=?').get(varianteId);
+          if (variante?.infinito) {
+            // Estoque infinito — entrega manual via ticket
+            conteudo = '⚠️ ABRIR TICKET PRA RESGATAR';
+            estoqueInfinito = true; // Bloquear fallback
+          } else {
+            // Estoque normal — pegar do banco
+            const { pegarItemVariante } = require('./painelProduto');
+            const itens = [];
+            for (let i = 0; i < qtd; i++) {
+              const item = pegarItemVariante(varianteId, pedido.usuario_id, pedido.id);
+              if (item) itens.push(item);
+              else break;
+            }
+            conteudo = itens.length > 0 ? itens.join('\n') : null;
+            // Se não conseguiu da variante, tenta estoque global como fallback
           }
-          conteudo = itens.length > 0 ? itens.join('\n') : null;
-          // Se não conseguiu da variante, tenta estoque global como fallback
         }
       }
 
