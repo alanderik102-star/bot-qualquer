@@ -16,7 +16,7 @@ function buildConfirmEmbed(varianteId, qtd) {
   const variante  = db.prepare('SELECT * FROM variantes_produto WHERE id=? AND ativo=1').get(varianteId);
   if (!variante) return null;
   const produto   = db.prepare('SELECT * FROM produtos WHERE id=?').get(variante.produto_id);
-  const estoque   = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || 0;
+  const estoque   = variante.infinito === 1 ? 27 : (db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || 0);
   const precoUnit = Number(variante.preco);
   const total     = precoUnit * qtd;
   const cashback  = Math.floor(total * 5);
@@ -62,23 +62,26 @@ module.exports = async (interaction, client) => {
     const variante   = db.prepare('SELECT * FROM variantes_produto WHERE id=? AND ativo=1').get(varianteId);
     if (!variante) return interaction.editReply({ content: '❌ Plano não encontrado.' });
 
-    const estoque = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || 0;
+    // Verificar estoque (exceto se infinito=1)
+    if (variante.infinito !== 1) {
+      const estoque = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || 0;
 
-    if (estoque === 0) {
-      const rowNotif = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId(`notif_estoque_${varianteId}`).setLabel('🔔 Avisar quando voltar').setStyle(ButtonStyle.Secondary),
-      );
-      return interaction.editReply({
-        embeds: [new EmbedBuilder()
-          .setColor(config.colors.error)
-          .setTitle('❌ Sem Estoque')
-          .setDescription([
-            `> O plano **${variante.nome}** está sem estoque.`,
-            `> Clique em 🔔 para ser notificado quando voltar.`,
-          ].join('\n'))
-          .setTimestamp()],
-        components: [rowNotif],
-      });
+      if (estoque === 0) {
+        const rowNotif = new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId(`notif_estoque_${varianteId}`).setLabel('🔔 Avisar quando voltar').setStyle(ButtonStyle.Secondary),
+        );
+        return interaction.editReply({
+          embeds: [new EmbedBuilder()
+            .setColor(config.colors.error)
+            .setTitle('❌ Sem Estoque')
+            .setDescription([
+              `> O plano **${variante.nome}** está sem estoque.`,
+              `> Clique em 🔔 para ser notificado quando voltar.`,
+            ].join('\n'))
+            .setTimestamp()],
+          components: [rowNotif],
+        });
+      }
     }
 
     // Iniciar com quantidade 1
@@ -101,8 +104,9 @@ module.exports = async (interaction, client) => {
   if (id.startsWith('alterar_qtd_confirm_')) {
     // Modal NÃO pode ter defer antes — responde direto com showModal
     const varianteId = id.replace('alterar_qtd_confirm_', '');
+    const variante   = db.prepare('SELECT infinito FROM variantes_produto WHERE id=?').get(varianteId);
     const sessao     = qtdSessao.get(interaction.user.id) || { varianteId, qtd: 1 };
-    const estoque    = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || 0;
+    const estoque    = variante?.infinito === 1 ? 27 : (db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || 0);
 
     const modal = new ModalBuilder().setCustomId(`modal_qtd_confirm_${varianteId}`).setTitle('🔢 Alterar Quantidade');
     modal.addComponents(
@@ -122,12 +126,13 @@ module.exports = async (interaction, client) => {
   // ── Modal: confirmar quantidade ────────────────────────────────────────────
   if (id.startsWith('modal_qtd_confirm_')) {
     const varianteId = id.replace('modal_qtd_confirm_', '');
+    const variante   = db.prepare('SELECT infinito FROM variantes_produto WHERE id=?').get(varianteId);
     const qtdStr     = interaction.fields.getTextInputValue('quantidade').trim();
     const qtd        = parseInt(qtdStr);
-    const estoque    = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || 0;
+    const estoque    = variante?.infinito === 1 ? 27 : (db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId)?.c || 0);
 
     if (isNaN(qtd) || qtd < 1) return interaction.reply({ content: '❌ Quantidade inválida.', ephemeral: true });
-    if (qtd > estoque) return interaction.reply({ content: `❌ Estoque insuficiente. Disponível: **${estoque}**.`, ephemeral: true });
+    if (variante?.infinito !== 1 && qtd > estoque) return interaction.reply({ content: `❌ Estoque insuficiente. Disponível: **${estoque}**.`, ephemeral: true });
 
     qtdSessao.set(interaction.user.id, { varianteId, qtd });
 
