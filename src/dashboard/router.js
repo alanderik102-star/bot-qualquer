@@ -557,8 +557,9 @@ router.get('/loja', (req, res, next) => {
 router.get('/loja/comprar/:produtoId', (req, res, next) => {
   const user = auth.getSessao(auth.getToken(req), dashDb.getIp(req));
   if (user && !user.__ipBloqueado) { req.dashUser = user; return next(); }
-  // Visitante tentando comprar — redirecionar para cadastro com aviso
-  return res.redirect('/painel/cadastro?ref=compra');
+  // Visitante — permitir compra
+  req.dashUser = { cargo: 'cliente', username: 'Visitante', discord_id: null, __visitante: true };
+  next();
 }, auth.middlewareAba('loja'), (req, res) => {
   const { db } = getMainDb();
   const user   = req.dashUser;

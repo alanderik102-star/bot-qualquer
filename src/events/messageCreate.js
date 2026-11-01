@@ -603,15 +603,15 @@ module.exports = {
       return;
     }
 
-    // ── !carregar — recarrega painéis de produtos dos canais ──────────────
-    if (message.content.toLowerCase().startsWith('!carregar')) {
-      await carregarPaineisExistentes(message);
-      return;
-    }
-
     // ── !carregarc — recarrega painéis apenas do canal atual ───────────────
     if (message.content.toLowerCase().startsWith('!carregarc')) {
       await carregarPaineisCanal(message);
+      return;
+    }
+
+    // ── !carregar — recarrega painéis de produtos dos canais ──────────────
+    if (message.content.toLowerCase().startsWith('!carregar')) {
+      await carregarPaineisExistentes(message);
       return;
     }
 
