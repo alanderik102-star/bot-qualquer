@@ -560,7 +560,7 @@ router.get('/loja/comprar/:produtoId', (req, res, next) => {
   // Visitante — permitir compra
   req.dashUser = { cargo: 'cliente', username: 'Visitante', discord_id: null, __visitante: true };
   next();
-}, auth.middlewareAba('loja'), (req, res) => {
+}, (req, res) => {
   const { db } = getMainDb();
   const user   = req.dashUser;
   const prod   = db.prepare('SELECT * FROM produtos WHERE id=? AND ativo=1').get(req.params.produtoId);
@@ -710,7 +710,13 @@ router.get('/loja/comprar/:produtoId', (req, res, next) => {
   res.send(layout(user, `🛍️ ${prod.nome}`, body, 'loja'));
 });
 
-router.post('/loja/finalizar', auth.middlewareAba('loja'), express.urlencoded({ extended: false }), async (req, res) => {
+router.post('/loja/finalizar', (req, res, next) => {
+  const user = auth.getSessao(auth.getToken(req), dashDb.getIp(req));
+  if (user && !user.__ipBloqueado) { req.dashUser = user; return next(); }
+  // Visitante
+  req.dashUser = { cargo: 'cliente', username: 'Visitante', discord_id: null, __visitante: true };
+  next();
+}, express.urlencoded({ extended: false }), async (req, res) => {
   const { produto_id, variante_id, cupom, metodo_pag, quantidade } = req.body;
   const user = req.dashUser;
   const { db, Usuarios, Pedidos, Cupons } = getMainDb();
@@ -799,7 +805,13 @@ router.post('/loja/finalizar', auth.middlewareAba('loja'), express.urlencoded({ 
   }
 });
 
-router.get('/loja/pagar/:pedidoId', auth.middlewareAba('loja'), (req, res) => {
+router.get('/loja/pagar/:pedidoId', (req, res, next) => {
+  const user = auth.getSessao(auth.getToken(req), dashDb.getIp(req));
+  if (user && !user.__ipBloqueado) { req.dashUser = user; return next(); }
+  // Visitante
+  req.dashUser = { cargo: 'cliente', username: 'Visitante', discord_id: null, __visitante: true };
+  next();
+}, (req, res) => {
   const { db } = getMainDb();
   const user   = req.dashUser;
   const pedido = db.prepare('SELECT p.*, pr.nome as produto_nome, pr.imagem_url as produto_img FROM pedidos p LEFT JOIN produtos pr ON p.produto_id=pr.id WHERE p.id=?').get(req.params.pedidoId);
