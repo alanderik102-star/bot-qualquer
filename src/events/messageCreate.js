@@ -167,17 +167,40 @@ async function carregarPaineisExistentes(message) {
     try {
       log.push(`\n🔍 **Buscando em** <#${canal.id}>...`);
       
-      // Buscar mensagens recentes do bot
-      const mensagens = await canal.messages.fetch({ limit: limite });
-      const mensagensBot = mensagens.filter(m => 
+      // Buscar mensagens em lotes de 100 (limite da API do Discord)
+      const todasMensagens = new Map();
+      let ultimaMsgId = null;
+      let totalBuscado = 0;
+
+      while (totalBuscado < limite) {
+        const buscar = Math.min(100, limite - totalBuscado); // Máximo 100 por vez
+        const opcoes = { limit: buscar };
+        if (ultimaMsgId) opcoes.before = ultimaMsgId;
+
+        const lote = await canal.messages.fetch(opcoes).catch(err => {
+          log.push(`   ❌ Erro ao buscar mensagens: ${err.message}`);
+          return null;
+        });
+
+        if (!lote || lote.size === 0) break; // Não tem mais mensagens
+
+        lote.forEach((msg, id) => todasMensagens.set(id, msg));
+        ultimaMsgId = lote.last()?.id;
+        totalBuscado += lote.size;
+
+        if (lote.size < buscar) break; // Canal não tem mais mensagens
+      }
+
+      const mensagensBot = Array.from(todasMensagens.values()).filter(m => 
         m.author.id === message.client.user.id && 
         m.embeds.length > 0 &&
         m.components.length > 0
       );
 
-      log.push(`   └─ ${mensagensBot.size} mensagens do bot encontradas`);
+      log.push(`   └─ ${mensagensBot.length} mensagens do bot encontradas (de ${todasMensagens.size} buscadas)`);
 
-      for (const [msgId, msg] of mensagensBot) {
+      for (const msg of mensagensBot) {
+        const msgId = msg.id;
         try {
           const embed = msg.embeds[0];
           const components = msg.components;
