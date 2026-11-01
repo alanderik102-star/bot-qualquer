@@ -811,6 +811,7 @@ async function entregarProduto(pedido, client) {
         ].filter(Boolean).join('\n'),
       });
     } catch {}
+  } catch (err) {
     console.error('[EntregarProduto]', err.message);
   }
 }
