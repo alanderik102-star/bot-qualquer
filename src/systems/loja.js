@@ -369,27 +369,32 @@ async function iniciarCompraVariante(interaction, varianteId, client, cupomCodig
     return interaction.editReply({ content: `⚠️ Você já tem um pedido pendente deste produto.\nID: \`${pedidoDup.id.slice(0,8).toUpperCase()}\`\nFinalize ou cancele o pedido anterior antes de comprar novamente.` });
   }
 
-  // Verificar estoque — sem estoque, não abre ticket
-  const digital = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId);
-  const qtdEstoque = Number(digital?.c || 0);
-  if (qtdEstoque === 0) {
-    const rowNotif = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId(`notif_estoque_${varianteId}`)
-        .setLabel('🔔 Avisar quando voltar')
-        .setStyle(ButtonStyle.Secondary),
-    );
-    return interaction.editReply({
-      embeds: [new EmbedBuilder()
-        .setColor(config.colors.error)
-        .setTitle('❌ Sem Estoque')
-        .setDescription([
-          `> O plano **${variante.nome}** está sem estoque no momento.`,
-          `> Clique em **🔔 Avisar quando voltar** para receber uma notificação no privado quando o estoque for reposto.`,
-        ].join('\n'))
-        .setTimestamp()],
-      components: [rowNotif],
-    });
+  // Verificar estoque — sem estoque, não abre ticket (EXCETO se infinito=1)
+  const varianteInfo = db.prepare('SELECT infinito FROM variantes_produto WHERE id=?').get(varianteId);
+  const temInfinito = varianteInfo?.infinito === 1;
+  
+  if (!temInfinito) {
+    const digital = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(varianteId);
+    const qtdEstoque = Number(digital?.c || 0);
+    if (qtdEstoque === 0) {
+      const rowNotif = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId(`notif_estoque_${varianteId}`)
+          .setLabel('🔔 Avisar quando voltar')
+          .setStyle(ButtonStyle.Secondary),
+      );
+      return interaction.editReply({
+        embeds: [new EmbedBuilder()
+          .setColor(config.colors.error)
+          .setTitle('❌ Sem Estoque')
+          .setDescription([
+            `> O plano **${variante.nome}** está sem estoque no momento.`,
+            `> Clique em **🔔 Avisar quando voltar** para receber uma notificação no privado quando o estoque for reposto.`,
+          ].join('\n'))
+          .setTimestamp()],
+        components: [rowNotif],
+      });
+    }
   }
 
   let precoFinal = Number(variante.preco);

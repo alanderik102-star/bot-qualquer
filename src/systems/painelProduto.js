@@ -474,13 +474,19 @@ async function atualizarPainelProduto(guild, painelId) {
     // Flash sale ativa para este produto?
     const fs = getFlashSale(painel.produto_id);
 
-    // Verificar se TODAS as variantes estão sem estoque
+    // Verificar se TODAS as variantes estão sem estoque (exceto as com infinito=1)
     const totalEstoque = db.prepare(`
       SELECT COUNT(*) as c FROM estoque_variante ev
       JOIN variantes_produto vp ON ev.variante_id = vp.id
       WHERE vp.produto_id=? AND ev.usado=0 AND vp.ativo=1
     `).get(painel.produto_id).c;
-    const semEstoque = totalEstoque === 0 && variantes.length > 0;
+    
+    const variantesInfinitas = db.prepare(`
+      SELECT COUNT(*) as c FROM variantes_produto vp
+      WHERE vp.produto_id=? AND vp.ativo=1 AND vp.infinito=1
+    `).get(painel.produto_id).c;
+    
+    const semEstoque = totalEstoque === 0 && variantes.length > 0 && variantesInfinitas === 0;
 
     // Formatar descrição
     const descricaoBruta = painel.descricao || 'Selecione um plano abaixo para comprar.';

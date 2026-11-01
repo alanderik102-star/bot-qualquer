@@ -571,7 +571,7 @@ router.get('/loja/comprar/:produtoId', (req, res, next) => {
 
   const variantes = db.prepare('SELECT * FROM variantes_produto WHERE produto_id=? AND ativo=1 ORDER BY ordem ASC').all(prod.id);
   const varOptions = variantes.map(v => {
-    const disp   = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(v.id)?.c || 0;
+    const disp   = v.infinito === 1 ? 27 : (db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(v.id)?.c || 0);
     const precoR = isRevend ? dashDb.getPrecoRevendedor(prod.id, v.id) : null;
     const precoEx = precoR ? ` [Rev: ${fmtMoeda(precoR.preco)}]` : '';
     return `<option value="${v.id}" ${disp===0?'disabled':''}>${v.nome} — ${fmtMoeda(v.preco)}${precoEx} ${disp===0?'(sem estoque)':'('+disp+' disp.)'}</option>`;
@@ -2290,7 +2290,7 @@ router.get('/revendedor/comprar/:produtoId', auth.middlewareAba('revendedor'), (
 
   const variantes  = db.prepare('SELECT * FROM variantes_produto WHERE produto_id=? AND ativo=1 ORDER BY ordem ASC').all(prod.id);
   const varOptions = variantes.map(v => {
-    const disp   = db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(v.id)?.c || 0;
+    const disp   = v.infinito === 1 ? 27 : (db.prepare('SELECT COUNT(*) as c FROM estoque_variante WHERE variante_id=? AND usado=0').get(v.id)?.c || 0);
     const pRev   = getPrecoRev(prod.id, v.id) ?? v.preco;
     return `<option value="${v.id}" ${disp===0?'disabled':''}>${v.nome} — ${fmtMoeda(pRev)} ${disp===0?'(sem estoque)':'('+disp+' disp.)'}</option>`;
   }).join('');
