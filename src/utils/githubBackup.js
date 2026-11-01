@@ -191,6 +191,13 @@ async function iniciar() {
 
 // ─── Comando manual de backup (usar com !backup) ──────────────────────────────
 async function backupManual() {
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_BACKUP_REPO;
+  
+  if (!token || !repo) {
+    return false; // Não configurado
+  }
+  
   return await fazerBackup();
 }
 

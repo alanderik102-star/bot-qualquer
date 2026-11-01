@@ -108,6 +108,19 @@ async function openTicket(interaction, category, subject, extraFields = []) {
 
   // Salvar no banco de dados do bot de vendas (tabela tickets)
   console.log(`[Ticket] 8️⃣ Salvando no banco de dados...`);
+  
+  // Garantir que o usuário existe na tabela usuarios (FOREIGN KEY requirement)
+  try {
+    const { Usuarios } = require('../database/database');
+    let usuario = Usuarios.get(user.id);
+    if (!usuario) {
+      console.log(`[Ticket] 📝 Criando usuário no banco: ${user.tag}`);
+      Usuarios.criar(user.id, user.tag);
+    }
+  } catch (err) {
+    console.error('[Ticket] ⚠️ Erro ao criar usuário:', err.message);
+  }
+  
   const ticketDbId = Tickets.criar({
     canalId:   channel.id,
     usuarioId: user.id,
