@@ -197,9 +197,9 @@ async function iniciarCompra(interaction, produtoId, cupomCodigo = null) {
         .setFooter({ text: 'Máximo Store • Ticket de Compra' })],
       components: [new ActionRowBuilder().addComponents(
         new ButtonBuilder()
+          .setCustomId('cvar_ver')
           .setLabel('🛒 Ver Carrinho')
-          .setStyle(ButtonStyle.Link)
-          .setURL(`https://discord.com/channels/${interaction.guild?.id}/${interaction.channelId}`),
+          .setStyle(ButtonStyle.Primary),
       )],
     });
   } else {
@@ -471,9 +471,9 @@ async function iniciarCompraVariante(interaction, varianteId, client, cupomCodig
         .setFooter({ text: 'Máximo Store • Ticket de Compra' })],
       components: [new ActionRowBuilder().addComponents(
         new ButtonBuilder()
+          .setCustomId('cvar_ver')
           .setLabel('🛒 Ver Carrinho')
-          .setStyle(ButtonStyle.Link)
-          .setURL(`https://discord.com/channels/${interaction.guild?.id}/${interaction.channelId}`),
+          .setStyle(ButtonStyle.Primary),
       )],
     });
   } else {

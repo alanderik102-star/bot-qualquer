@@ -406,9 +406,7 @@ function montarComponentes(variantes, painelId) {
       const descCustom = v.descricao ? sanitizar(v.descricao, 40) : null;
       const estoqueStr = qtd <= 5 ? `⚠️ Últimas ${qtd} un.` : `📦 ${qtd} disponíveis`;
       const fsStr      = precoFS ? ` • era R$ ${precoBase.toFixed(2)}` : '';
-      desc = descCustom
-        ? `${descCustom} • ${estoqueStr}${fsStr}`
-        : `${estoqueStr}${fsStr}`;
+      desc = descCustom || `${estoqueStr}${fsStr}`.trim();
     }
 
     return { label, description: desc.slice(0, 100), value: v.id };
