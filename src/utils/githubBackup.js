@@ -69,6 +69,20 @@ async function restaurarBackup() {
 
     // Salvar o banco
     const buffer = Buffer.from(await response.arrayBuffer());
+    
+    // Validar se não está corrompido (tamanho mínimo de um SQLite válido)
+    if (buffer.length < 1024) {
+      console.log('[GitBackup] ⚠️ Backup muito pequeno, pode estar corrompido. Ignorando.');
+      return false;
+    }
+    
+    // Verificar header SQLite (começa com "SQLite format 3")
+    const header = buffer.toString('utf8', 0, 16);
+    if (!header.startsWith('SQLite format 3')) {
+      console.log('[GitBackup] ⚠️ Arquivo não é um banco SQLite válido. Ignorando backup.');
+      return false;
+    }
+    
     fs.writeFileSync(DB_PATH, buffer);
 
     console.log('[GitBackup] ✅ Backup restaurado do GitHub!');
@@ -97,6 +111,14 @@ async function fazerBackup() {
 
     // Ler o banco como base64
     const dbContent = fs.readFileSync(DB_PATH).toString('base64');
+    
+    // Validar tamanho mínimo (prevenir backup de banco vazio/corrompido)
+    const dbSize = fs.statSync(DB_PATH).size;
+    if (dbSize < 4096) {
+      console.log('[GitBackup] ⚠️ Banco muito pequeno, pulando backup (pode estar corrompido)');
+      return false;
+    }
+    
     const timestamp = new Date().toISOString();
 
     // Verificar se já existe um arquivo no repo (pegar SHA)
