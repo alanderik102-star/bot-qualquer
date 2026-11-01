@@ -500,22 +500,7 @@ client.on('guildMemberAdd', async (member) => {
 
   atualizarMembros(member.guild);
   
-  // Log detalhado de entrada
-  const accountAge = Math.floor((Date.now() - member.user.createdTimestamp) / (1000 * 60 * 60 * 24));
-  const createdAt = Math.floor(member.user.createdTimestamp / 1000);
-  
-  logMr(client, member.guild, 'membro_entrou', {
-    acao: 'Novo Membro',
-    alvo: `${member.user.tag} (<@${member.user.id}>)`,
-    detalhes: [
-      `👤 **Username:** ${member.user.username}`,
-      `🆔 **ID:** \`${member.user.id}\``,
-      `📅 **Conta criada:** <t:${createdAt}:F> (<t:${createdAt}:R>)`,
-      `⏳ **Idade da conta:** ${accountAge} dia(s)`,
-      `🤖 **Bot:** ${member.user.bot ? 'Sim' : 'Não'}`,
-      `📊 **Total de membros:** ${member.guild.memberCount}`,
-    ].join('\n'),
-  });
+  // NOTA: Log de entrada agora é feito em src/events/guildMemberAdd.js (evita duplicação)
 });
 
 // ─── Membro saiu ──────────────────────────────────────────────

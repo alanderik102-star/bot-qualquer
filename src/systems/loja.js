@@ -795,19 +795,22 @@ async function entregarProduto(pedido, client) {
     try {
       const { log: logMr } = require('../menu/logsHandler');
       const metodoDisplay = pedido.metodo_pag || 'PIX';
+      const cargoUsuario = usuario?.cargo || 'cliente';
+      const isRevendedor = cargoUsuario === 'revendedor';
+      
       logMr(client, guild, 'compra', {
-        acao: '🛍️ Compra Realizada',
+        acao: isRevendedor ? '🏪 Compra Revendedor' : '🛍️ Compra Realizada',
         alvo: `<@${pedido.usuario_id}>`,
         detalhes: [
+          isRevendedor ? `**🏪 REVENDEDOR**` : '',
           `**Produto:** ${produto.nome}`,
           `**Quantidade:** ${pedido.quantidade}`,
           `**Valor:** R$ ${pedido.valor_total.toFixed(2)}`,
           `**Pedido:** \`${pedido.id.slice(0,8).toUpperCase()}\``,
           `**Método:** ${metodoDisplay}`,
-        ].join('\n'),
+        ].filter(Boolean).join('\n'),
       });
     } catch {}
-  } catch (err) {
     console.error('[EntregarProduto]', err.message);
   }
 }

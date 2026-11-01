@@ -834,23 +834,55 @@ module.exports = {
       return;
     }
 
-    // ── Comando !infinito (toggle estoque infinito em variante) ────────────────
+    // ── Comando !infinito (toggle estoque infinito em variante/todas) ─────────
     if (message.content.toLowerCase().startsWith('!infinito')) {
       const args = message.content.trim().split(/\s+/);
-      if (args.length < 2) return message.reply('Uso: `!infinito <variante_id_8chars>`');
-      const varId = args[1];
       const { db } = require('../database/database');
-      const variantes = db.prepare('SELECT * FROM variantes_produto WHERE id LIKE ?').all(`${varId}%`);
-      if (!variantes.length) return message.reply(`❌ Variante com ID \`${varId}\` não encontrada.`);
-      const v = variantes[0];
-      const novoInfinito = v.infinito ? 0 : 1;
-      db.prepare('UPDATE variantes_produto SET infinito=? WHERE id=?').run(novoInfinito, v.id);
-      await message.reply(`✅ Variante **${v.nome}** agora tem estoque **${novoInfinito ? 'INFINITO ♾️' : 'NORMAL'}**.`);
-      // Atualizar painel do produto
+      
+      // Se passou ID, altera apenas aquela variante
+      if (args.length >= 2) {
+        const varId = args[1];
+        const variantes = db.prepare('SELECT * FROM variantes_produto WHERE id LIKE ?').all(`${varId}%`);
+        if (!variantes.length) return message.reply(`❌ Variante com ID \`${varId}\` não encontrada.`);
+        const v = variantes[0];
+        const novoInfinito = v.infinito ? 0 : 1;
+        db.prepare('UPDATE variantes_produto SET infinito=? WHERE id=?').run(novoInfinito, v.id);
+        await message.reply(`✅ Variante **${v.nome}** agora tem estoque **${novoInfinito ? 'INFINITO ♾️' : 'NORMAL'}**.`);
+        
+        // Atualizar painel do produto
+        try {
+          const { atualizarPainelProduto } = require('../systems/painelProduto');
+          const paineis = db.prepare('SELECT * FROM paineis_canal WHERE produto_id=? AND ativo=1').all(v.produto_id);
+          for (const p of paineis) await atualizarPainelProduto(message.guild, p.id).catch(() => {});
+        } catch {}
+        return;
+      }
+      
+      // Se NÃO passou ID, altera TODAS as variantes ativas
+      const aviso = await message.reply('🔄 Processando todas as variantes ativas...').catch(() => null);
+      
+      // Verificar se tem alguma com infinito=1 (se tiver, vamos desativar todas, senão ativar todas)
+      const comInfinito = db.prepare('SELECT COUNT(*) as c FROM variantes_produto WHERE ativo=1 AND infinito=1').get()?.c || 0;
+      const novoEstado = comInfinito > 0 ? 0 : 1; // Se tem algum infinito, desativa todos; senão ativa todos
+      
+      // Atualizar todas as variantes ativas
+      const resultado = db.prepare('UPDATE variantes_produto SET infinito=? WHERE ativo=1').run(novoEstado);
+      const total = resultado.changes;
+      
+      const msg = novoEstado 
+        ? `✅ **${total} variantes** agora têm estoque **INFINITO ♾️** (mostram 27 unidades)`
+        : `✅ **${total} variantes** agora têm estoque **NORMAL** (mostram estoque real)`;
+      
+      if (aviso) await aviso.edit(msg);
+      else await message.reply(msg);
+      
+      // Atualizar TODOS os painéis
       try {
         const { atualizarPainelProduto } = require('../systems/painelProduto');
-        const paineis = db.prepare('SELECT * FROM paineis_canal WHERE produto_id=? AND ativo=1').all(v.produto_id);
-        for (const p of paineis) await atualizarPainelProduto(message.guild, p.id).catch(() => {});
+        const paineis = db.prepare('SELECT DISTINCT p.* FROM paineis_canal p JOIN produtos pr ON p.produto_id=pr.id WHERE p.ativo=1 AND pr.ativo=1').all();
+        for (const p of paineis) {
+          await atualizarPainelProduto(message.guild, p.id).catch(() => {});
+        }
       } catch {}
       return;
     }
