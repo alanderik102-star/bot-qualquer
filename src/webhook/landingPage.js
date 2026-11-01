@@ -3,22 +3,24 @@ module.exports.html = `<!DOCTYPE html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="MrStore - A melhor loja de produtos digitais e serviços do Discord. Pagamento via PIX instantâneo.">
-  <title>MrStore - Sua Loja Premium no Discord</title>
+  <meta name="description" content="MrStore - Menus FiveM, Contas FF, Hacks, Cheats e muito mais! Entrega instantânea via PIX.">
+  <title>MrStore - Menus, Hacks & Contas Premium 🔥</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0a0a0f;
+      --bg-dark: #0d0d14;
       --bg-darker: #050508;
-      --bg-card: #13131a;
-      --accent: #e8b840;
-      --accent-glow: #f5d060;
-      --purple: #9333ea;
-      --purple-light: #a855f7;
-      --text: #e4e4e7;
-      --text-dim: #a1a1aa;
-      --border: #27272a;
+      --bg-card: #16161f;
+      --accent: #00ff88;
+      --accent-glow: #00ffaa;
+      --red: #ff0844;
+      --red-glow: #ff3366;
+      --purple: #b026ff;
+      --purple-light: #d055ff;
+      --text: #ffffff;
+      --text-dim: #8b8b9f;
+      --border: #2a2a3a;
     }
     
     * {
@@ -35,7 +37,7 @@ module.exports.html = `<!DOCTYPE html>
       line-height: 1.6;
     }
     
-    /* Animated gradient background */
+    /* Animated gradient background - GAMER STYLE */
     body::before {
       content: '';
       position: fixed;
@@ -43,12 +45,26 @@ module.exports.html = `<!DOCTYPE html>
       left: -50%;
       width: 200%;
       height: 200%;
-      background: radial-gradient(circle at 20% 50%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
-                  radial-gradient(circle at 80% 80%, rgba(232, 184, 64, 0.1) 0%, transparent 50%),
-                  radial-gradient(circle at 40% 90%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
-      animation: gradientShift 20s ease infinite;
+      background: radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 80% 80%, rgba(255, 8, 68, 0.12) 0%, transparent 50%),
+                  radial-gradient(circle at 40% 90%, rgba(176, 38, 255, 0.1) 0%, transparent 50%);
+      animation: gradientShift 15s ease infinite;
       pointer-events: none;
       z-index: 0;
+    }
+    
+    /* Scanlines effect */
+    body::after {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 136, 0.03) 2px, rgba(0, 255, 136, 0.03) 4px);
+      pointer-events: none;
+      z-index: 999;
+      opacity: 0.3;
     }
     
     @keyframes gradientShift {
@@ -83,13 +99,16 @@ module.exports.html = `<!DOCTYPE html>
     }
     
     .logo {
-      font-size: 28px;
+      font-size: 32px;
       font-weight: 900;
-      background: linear-gradient(135deg, var(--accent), var(--accent-glow), var(--purple-light));
+      background: linear-gradient(135deg, var(--accent), var(--red), var(--purple));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      letter-spacing: -0.5px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+      filter: drop-shadow(0 0 10px var(--accent));
     }
     
     .nav-links {
@@ -128,20 +147,23 @@ module.exports.html = `<!DOCTYPE html>
     }
     
     .cta-button {
-      background: linear-gradient(135deg, var(--purple), var(--purple-light));
+      background: linear-gradient(135deg, var(--red), var(--red-glow));
       color: white;
       padding: 12px 28px;
-      border-radius: 12px;
-      font-weight: 600;
+      border-radius: 8px;
+      font-weight: 700;
       font-size: 15px;
       text-decoration: none;
       transition: all 0.3s;
-      box-shadow: 0 4px 20px rgba(147, 51, 234, 0.3);
+      box-shadow: 0 0 20px rgba(255, 8, 68, 0.4), inset 0 0 20px rgba(255, 255, 255, 0.1);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border: 1px solid var(--red-glow);
     }
     
     .cta-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 30px rgba(147, 51, 234, 0.5);
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 0 40px rgba(255, 8, 68, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.2);
     }
     
     /* Hero Section */
@@ -160,12 +182,13 @@ module.exports.html = `<!DOCTYPE html>
     }
     
     .gradient-text {
-      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-glow) 40%, var(--purple-light) 100%);
+      background: linear-gradient(135deg, var(--accent) 0%, var(--red) 50%, var(--purple) 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      animation: shimmer 3s ease-in-out infinite;
+      animation: shimmer 2s ease-in-out infinite;
       background-size: 200% auto;
+      filter: drop-shadow(0 0 20px var(--accent)) drop-shadow(0 0 40px var(--red));
     }
     
     @keyframes shimmer {
@@ -190,21 +213,42 @@ module.exports.html = `<!DOCTYPE html>
     
     .btn-primary {
       background: linear-gradient(135deg, var(--accent), var(--accent-glow));
-      color: var(--bg-dark);
+      color: #000;
       padding: 18px 40px;
-      border-radius: 14px;
-      font-weight: 700;
-      font-size: 17px;
+      border-radius: 8px;
+      font-weight: 900;
+      font-size: 18px;
       text-decoration: none;
       transition: all 0.3s;
-      box-shadow: 0 10px 40px rgba(232, 184, 64, 0.4);
-      border: none;
+      box-shadow: 0 0 30px rgba(0, 255, 136, 0.6), inset 0 0 20px rgba(255, 255, 255, 0.2);
+      border: 2px solid var(--accent-glow);
       cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transform: rotate(45deg);
+      animation: shine 3s infinite;
+    }
+    
+    @keyframes shine {
+      0% { left: -50%; }
+      100% { left: 150%; }
     }
     
     .btn-primary:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 16px 50px rgba(232, 184, 64, 0.6);
+      transform: translateY(-4px) scale(1.05);
+      box-shadow: 0 0 50px rgba(0, 255, 136, 1), inset 0 0 30px rgba(255, 255, 255, 0.3);
     }
     
     .btn-secondary {
@@ -491,35 +535,35 @@ module.exports.html = `<!DOCTYPE html>
   <section class="hero">
     <div class="container">
       <h1>
-        Sua <span class="gradient-text">Loja Premium</span><br>
-        no Discord
+        <span class="gradient-text">MENUS, HACKS & CONTAS</span><br>
+        Entrega Instantânea 🔥
       </h1>
       <p>
-        Sistema completo de vendas com PIX instantâneo, dashboard web,
-        gestão de produtos, tickets avançados e muito mais. Tudo em um único bot.
+        Os melhores menus para FiveM, contas Free Fire level max, hacks CS2, 
+        MODs e cheats. Pagamento via PIX com entrega automática na hora!
       </p>
       <div class="hero-buttons">
-        <a href="https://discord.gg/mrstore" class="btn-primary">🚀 Entrar no Discord</a>
-        <a href="/painel" class="btn-secondary">📊 Ver Dashboard</a>
+        <a href="https://discord.gg/mrstore" class="btn-primary">⚡ COMPRAR AGORA</a>
+        <a href="/painel" class="btn-secondary">🎮 Ver Produtos</a>
       </div>
       
       <!-- Stats -->
       <div class="stats">
         <div class="stat-card fade-in">
-          <div class="stat-number">24/7</div>
-          <div class="stat-label">Online Sempre</div>
+          <div class="stat-number">1000+</div>
+          <div class="stat-label">Clientes Satisfeitos</div>
         </div>
         <div class="stat-card fade-in" style="animation-delay: 0.1s">
           <div class="stat-number">⚡</div>
-          <div class="stat-label">Entrega Instantânea</div>
+          <div class="stat-label">Entrega em Segundos</div>
         </div>
         <div class="stat-card fade-in" style="animation-delay: 0.2s">
-          <div class="stat-number">🔒</div>
-          <div class="stat-label">100% Seguro</div>
+          <div class="stat-number">24/7</div>
+          <div class="stat-label">Suporte Online</div>
         </div>
         <div class="stat-card fade-in" style="animation-delay: 0.3s">
-          <div class="stat-number">🎯</div>
-          <div class="stat-label">Suporte Premium</div>
+          <div class="stat-number">🔒</div>
+          <div class="stat-label">100% Seguro</div>
         </div>
       </div>
     </div>
@@ -529,58 +573,58 @@ module.exports.html = `<!DOCTYPE html>
   <section class="features" id="recursos">
     <div class="container">
       <div class="section-header">
-        <h2 class="section-title">Recursos Avançados</h2>
+        <h2 class="section-title">Produtos Disponíveis</h2>
         <p class="section-subtitle">
-          Tudo que você precisa para gerenciar sua loja no Discord de forma profissional
+          Os melhores menus, contas e cheats do mercado com preços imbatíveis
         </p>
       </div>
       
       <div class="feature-grid">
         <div class="feature-card fade-in">
-          <span class="feature-icon">💳</span>
-          <h3 class="feature-title">Pagamento PIX Automático</h3>
+          <span class="feature-icon">🚗</span>
+          <h3 class="feature-title">Menus FiveM Premium</h3>
           <p class="feature-description">
-            Integração com EFI Bank (Gerencianet) para receber pagamentos via PIX com confirmação instantânea e entrega automática.
+            CS2 Mindless, Shark Menu, Eulen e muito mais. Menus completos com todas as funções desbloqueadas. Suporte vitalício incluso!
           </p>
         </div>
         
         <div class="feature-card fade-in">
-          <span class="feature-icon">📦</span>
-          <h3 class="feature-title">Gestão de Produtos</h3>
+          <span class="feature-icon">🔫</span>
+          <h3 class="feature-title">Contas Free Fire Max</h3>
           <p class="feature-description">
-            Cadastre produtos digitais, defina preços, estoques, categorias e imagens. Sistema completo de caixas misteriosas e flash sales.
+            Contas level alto, skins raras, diamantes, personagens e pets. Contas verificadas e 100% seguras com garantia de reposição.
           </p>
         </div>
         
         <div class="feature-card fade-in">
-          <span class="feature-icon">🎫</span>
-          <h3 class="feature-title">Sistema de Tickets Avançado</h3>
+          <span class="feature-icon">💎</span>
+          <h3 class="feature-title">Hacks & Cheats CS2</h3>
           <p class="feature-description">
-            Tickets com SLA, prioridades, tags, transcrição HTML, múltiplas categorias (suporte/denúncia/parceria) e auto-close inteligente.
+            Aimbot, Wallhack, ESP, Triggerbot e muito mais. Indetectáveis, atualizados semanalmente. Prime e não Prime disponíveis.
           </p>
         </div>
         
         <div class="feature-card fade-in">
-          <span class="feature-icon">🎛️</span>
-          <h3 class="feature-title">Dashboard Web Completo</h3>
+          <span class="feature-icon">🎮</span>
+          <h3 class="feature-title">Contas Valorant & LOL</h3>
           <p class="feature-description">
-            Painel administrativo web com Socket.IO, gestão de produtos, usuários, vendas, cupons, estatísticas e controle de permissões.
+            Contas unranked até Radiante, skins raras, battle pass completo. Riot Games verificado. Mudança de email inclusa.
           </p>
         </div>
         
         <div class="feature-card fade-in">
-          <span class="feature-icon">🎁</span>
-          <h3 class="feature-title">Sistema de Recompensas</h3>
+          <span class="feature-icon">⚡</span>
+          <h3 class="feature-title">MODs & Scripts</h3>
           <p class="feature-description">
-            Coins por compras, cupons de desconto, programa de afiliados com 2 níveis, cashback e sistema de ranking de clientes VIP.
+            Scripts exclusivos para FiveM, GTA V Online, Roblox Executors e muito mais. Sempre atualizados e funcionando perfeitamente.
           </p>
         </div>
         
         <div class="feature-card fade-in">
           <span class="feature-icon">🛡️</span>
-          <h3 class="feature-title">Segurança & Proteção</h3>
+          <h3 class="feature-title">VPN & Spoofer</h3>
           <p class="feature-description">
-            Anti-fraude, backup automático, proteção de cargos, logs detalhados, autenticação 2FA e prevenção de chargebacks.
+            HWID Spoofer para bypass de ban, VPN premium, contas Netflix, Spotify, Disney+. Assinaturas mensais ou vitalícias.
           </p>
         </div>
       </div>
@@ -590,14 +634,14 @@ module.exports.html = `<!DOCTYPE html>
   <!-- CTA Section -->
   <section class="cta-section" id="sobre">
     <div class="container">
-      <h2>Pronto para começar?</h2>
+      <h2>Pronto para dominar? 🔥</h2>
       <p>
-        Entre no nosso servidor Discord e conheça todos os recursos da MrStore.
-        Suporte dedicado, produtos de qualidade e entrega instantânea!
+        Entre no Discord e veja todos os nossos produtos. 
+        Pagamento via PIX com entrega INSTANTÂNEA. Suporte 24/7!
       </p>
       <div class="hero-buttons">
-        <a href="https://discord.gg/mrstore" class="btn-primary">🎮 Entrar no Discord</a>
-        <a href="/painel" class="btn-secondary">🔐 Acessar Painel</a>
+        <a href="https://discord.gg/mrstore" class="btn-primary">🎮 ENTRAR NO DISCORD</a>
+        <a href="/painel" class="btn-secondary">👑 Ver Produtos</a>
       </div>
     </div>
   </section>
