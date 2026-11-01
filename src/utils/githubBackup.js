@@ -151,6 +151,15 @@ async function fazerBackup() {
 
 // ─── Iniciar sistema de backup automático ─────────────────────────────────────
 async function iniciar() {
+  // Verificar se as variáveis estão configuradas
+  const token = process.env.GITHUB_TOKEN;
+  const repo = process.env.GITHUB_BACKUP_REPO;
+  
+  if (!token || !repo) {
+    console.log('[GitBackup] ⚠️ Sistema desabilitado (GITHUB_TOKEN ou GITHUB_BACKUP_REPO não configurado)');
+    return; // Sair silenciosamente se não configurado
+  }
+
   const configurado = configurarGit();
   if (!configurado) return;
 

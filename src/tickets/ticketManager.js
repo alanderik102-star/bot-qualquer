@@ -28,6 +28,7 @@ function getCategoryId(category) {
 // ── Abre um novo ticket avançado ──────────────────────────────
 async function openTicket(interaction, category, subject, extraFields = []) {
   const { guild, user } = interaction;
+  console.log(`[Ticket] 1️⃣ Iniciando abertura - User: ${user.tag}, Categoria: ${category}`);
 
   // Verificar bloqueio no banco de vendas
   const usuarioDB = db.prepare('SELECT bloqueado FROM usuarios WHERE discord_id = ?').get(user.id);
@@ -40,6 +41,7 @@ async function openTicket(interaction, category, subject, extraFields = []) {
 
   // Verificar limite de tickets abertos (tabela tickets do banco de vendas)
   const abertos = Tickets.abertosUsuario(user.id);
+  console.log(`[Ticket] 2️⃣ Tickets abertos do usuário: ${abertos}/${config.tickets.maxTicketsPerUser}`);
   if (abertos >= config.tickets.maxTicketsPerUser) {
     return interaction.reply({
       embeds: [new EmbedBuilder().setColor(config.colors.warning)
@@ -48,11 +50,15 @@ async function openTicket(interaction, category, subject, extraFields = []) {
     });
   }
 
+  console.log(`[Ticket] 3️⃣ Chamando deferReply...`);
   await interaction.deferReply({ ephemeral: true });
+  console.log(`[Ticket] 4️⃣ deferReply concluído`);
 
   const parentId = getCategoryId(category);
+  console.log(`[Ticket] 5️⃣ Buscando categoria parent: ${parentId}`);
   const parent = await guild.channels.fetch(parentId).catch(() => null);
   if (!parent || parent.type !== ChannelType.GuildCategory) {
+    console.log(`[Ticket] ❌ Categoria não encontrada!`);
     return interaction.editReply({
       embeds: [new EmbedBuilder().setColor(config.colors.danger)
         .setDescription('❌ Categoria de tickets não encontrada. Verifique o `.env`.')],
@@ -63,6 +69,7 @@ async function openTicket(interaction, category, subject, extraFields = []) {
   const ticketId = generateTicketId();
   const channelName = `🎫│${ticketId.toLowerCase()}`;
   const r = config.roles;
+  console.log(`[Ticket] 6️⃣ Gerando canal: ${channelName}`);
 
   let channel;
   try {
@@ -90,8 +97,9 @@ async function openTicket(interaction, category, subject, extraFields = []) {
         })),
       ],
     });
+    console.log(`[Ticket] 7️⃣ Canal criado com sucesso: ${channel.id}`);
   } catch (err) {
-    console.error('[Ticket] Erro ao criar canal:', err.message);
+    console.error('[Ticket] ❌ Erro ao criar canal:', err.message);
     return interaction.editReply({
       embeds: [new EmbedBuilder().setColor(config.colors.danger)
         .setDescription(`❌ Erro ao criar canal: ${err.message}`)],
@@ -99,11 +107,13 @@ async function openTicket(interaction, category, subject, extraFields = []) {
   }
 
   // Salvar no banco de dados do bot de vendas (tabela tickets)
+  console.log(`[Ticket] 8️⃣ Salvando no banco de dados...`);
   const ticketDbId = Tickets.criar({
     canalId:   channel.id,
     usuarioId: user.id,
     tipo:      category,
   });
+  console.log(`[Ticket] 9️⃣ Salvo no DB - ticketDbId: ${ticketDbId}`);
 
   // Registrar também no formato do banco de tickets para compatibilidade
   try {
@@ -127,25 +137,46 @@ async function openTicket(interaction, category, subject, extraFields = []) {
     created_at: Math.floor(Date.now() / 1000),
   };
 
+  console.log(`[Ticket] 🔟 Montando embed e botões...`);
   const welcomeEmbed = buildWelcomeEmbed(ticketObj, user, extraFields);
+  console.log(`[Ticket] 1️⃣1️⃣ buildWelcomeEmbed OK`);
   const buttons = buildTicketButtons(ticketId);
+  console.log(`[Ticket] 1️⃣2️⃣ buildTicketButtons OK`);
 
-  const panelMsg = await channel.send({
-    content: `${user} | <@&${r.suporte}> <@&${r.mod}>`,
-    embeds:  [welcomeEmbed],
-    components: buttons,
-  });
-  await panelMsg.pin().catch(() => {});
+  let panelMsg;
+  try {
+    console.log(`[Ticket] 1️⃣3️⃣ Tentando enviar painel no canal ${channel.id}...`);
+    panelMsg = await channel.send({
+      content: `${user} | <@&${r.suporte}> <@&${r.mod}>`,
+      embeds:  [welcomeEmbed],
+      components: buttons,
+    });
+    console.log(`[Ticket] 1️⃣4️⃣ ✅ Painel enviado! MsgId: ${panelMsg.id}`);
+    await panelMsg.pin().catch(() => {});
+  } catch (err) {
+    console.error('[Ticket] ❌ ERRO ao enviar painel:', err.message);
+    console.error('[Ticket] Stack:', err.stack);
+    // Tentar enviar mensagem simples como fallback
+    try {
+      await channel.send(`✅ <@${user.id}> Seu ticket foi criado! ID: \`${ticketId}\``);
+    } catch {}
+  }
 
   // Cooldown de abertura
+  console.log(`[Ticket] 1️⃣5️⃣ Setando cooldown...`);
   setCooldown(user.id);
 
   // DM de confirmação
-  const member = await guild.members.fetch(user.id).catch(() => null);
-  if (member) sendOpenConfirmDM(member, ticketObj);
+  try {
+    console.log(`[Ticket] 1️⃣6️⃣ Enviando DM...`);
+    const member = await guild.members.fetch(user.id).catch(() => null);
+    if (member) await sendOpenConfirmDM(member, ticketObj).catch(() => {});
+  } catch {}
 
   const { ActionRowBuilder: AR, ButtonBuilder: BB, ButtonStyle: BS } = require('discord.js');
-  await interaction.editReply({
+  try {
+    console.log(`[Ticket] 1️⃣7️⃣ Enviando editReply...`);
+    await interaction.editReply({
     embeds: [new EmbedBuilder()
       .setColor(config.colors.success)
       .setTitle('🎫 Ticket Aberto!')
@@ -169,6 +200,13 @@ async function openTicket(interaction, category, subject, extraFields = []) {
         .setURL(`https://discord.com/channels/${guild.id}/${channel.id}`),
     )],
   });
+    console.log(`[Ticket] 1️⃣8️⃣ ✅ Ticket criado com sucesso!`);
+  } catch (err) {
+    console.error('[Ticket] ❌ Erro no editReply:', err.message, err.stack);
+    try {
+      await interaction.followUp({ content: `✅ Ticket criado: ${channel}`, ephemeral: true }).catch(() => {});
+    } catch {}
+  }
 }
 
 // ── Fecha um ticket ───────────────────────────────────────────
